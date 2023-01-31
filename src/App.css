@@ -1,0 +1,13 @@
+#root {
+  margin: 0 auto;
+  padding: 2rem;
+  text-align: center;
+  min-width: 1vm;
+  min-height: 1vh;
+}
+
+.App-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
