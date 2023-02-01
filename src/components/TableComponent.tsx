@@ -2,9 +2,30 @@ import React, { useState } from 'react';
 import { DataType } from '../utils/types';
 import { Button, Table, Tag, TableProps, Spin } from 'antd';
 import type { ColumnsType, SorterResult } from 'antd/es/table/interface';
+import { useQuery } from '@tanstack/react-query';
+import axios from 'axios';
 
-const TableComponent = ({ data }: { data: DataType[] | [] }) => {
+const TableComponent = () => {
   const [sortedInfo, setSortedInfo] = useState<SorterResult<DataType>>({});
+  const { isLoading, error, data, isFetching } = useQuery({
+    queryKey: ['fetchEvents'],
+    queryFn: () =>
+      axios.get('http://localhost:5101/events').then((res) => res.data),
+  });
+
+  if (isLoading)
+    return (
+      <Spin tip="Loading">
+        <div className="spin-content" />
+      </Spin>
+    );
+
+  if (error)
+    return (
+      <div>
+        <p>{JSON.stringify(error)}</p>
+      </div>
+    );
 
   const handleChange: TableProps<DataType>['onChange'] = (filters, sorter) => {
     console.log('Various parameters', filters, sorter);
@@ -87,12 +108,6 @@ const TableComponent = ({ data }: { data: DataType[] | [] }) => {
     },
   ];
 
-  return data?.length > 0 ? (
-    <Table columns={columns} dataSource={data} onChange={handleChange} />
-  ) : (
-    <Spin tip="Loading" size="large">
-      <div className="spin-content" />
-    </Spin>
-  );
+  return <Table columns={columns} dataSource={data} onChange={handleChange} />;
 };
 export default TableComponent;

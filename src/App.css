@@ -19,3 +19,8 @@
   align-items: center;
   padding: 10rem;
 }
+.align-end {
+  display: flex;
+  justify-content: end;
+  align-items: center;
+}

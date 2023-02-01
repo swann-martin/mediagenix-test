@@ -1,8 +1,10 @@
-import React, { MouseEvent, useEffect } from 'react';
-import { Button, DatePicker, Form, Input, Select } from 'antd';
+import React, { MouseEvent, useEffect, useState } from 'react';
+import { Button, DatePicker, Form, Input, Select, Space, Spin } from 'antd';
 import TextArea from 'antd/es/input/TextArea';
 import { SchemaType } from '../utils/types';
 import Modal from 'antd/es/modal/Modal';
+import { useMutation, useQuery } from '@tanstack/react-query';
+import { fetchFormSchema, postEvent } from '../api/queriesFonctions';
 
 const FormComponent = ({
   isFormOpen,
@@ -13,45 +15,96 @@ const FormComponent = ({
 }) => {
   const [form] = Form.useForm();
   const { RangePicker } = DatePicker;
+  const { mutate } = useMutation(postEvent, {});
+  const { isLoading, error, data } = useQuery({
+    queryKey: ['schema'],
+    queryFn: fetchFormSchema,
+  });
 
-  const [schema, setSchema] = React.useState([]);
+  if (isLoading)
+    return (
+      <Spin tip="Loading">
+        <div className="spin-content" />
+      </Spin>
+    );
 
-  useEffect(() => {
-    try {
-      const res = fetch(`http://localhost:5101/schema`);
-      res.then((res) => res.json()).then((schema) => setSchema(schema));
-    } catch (e) {
-      console.error(e);
-    }
-  }, []);
+  if (error)
+    return (
+      <div>
+        <p>{JSON.stringify(error)}</p>
+      </div>
+    );
 
-  const CustomInput = ({ item }: { item: SchemaType }) => {
+  const CustomField = ({ item }: { item: SchemaType }) => {
     switch (item.component) {
       case 'textarea':
-        return <TextArea />;
+        return (
+          <Form.Item
+            name={item.name}
+            label={item.label}
+            required={!!item.required}
+          >
+            <TextArea />
+          </Form.Item>
+        );
       case 'range_picker':
-        return <RangePicker />;
+        return (
+          <Form.Item
+            name={item.name}
+            label={item.label}
+            required={!!item.required}
+          >
+            <RangePicker />
+          </Form.Item>
+        );
+
       case 'select':
-        return <Select options={item.options} />;
+        return (
+          <Form.Item
+            name={item.name}
+            label={item.label}
+            required={!!item.required}
+          >
+            <Select options={item.options} />
+          </Form.Item>
+        );
+
       case 'text':
-        return <Input />;
       default:
-        return <Input />;
+        return (
+          <Form.Item
+            name={item.name}
+            label={item.label}
+            required={!!item.required}
+          >
+            <Input />
+          </Form.Item>
+        );
     }
   };
 
   const onFinish = (values: any) => {
-    console.log('Received values of form:', values);
-  };
+    values.endDate = values.startDate.endDate[1].toISOString().split('T')[0];
+    values.startDate = values.startDate.endDate[0].toISOString().split('T')[0];
 
-  const submit = (e: MouseEvent): void => {
-    e.preventDefault();
-    e.stopPropagation();
-    console.log('sumbitted form');
+    const newValues = {
+      ...values,
+    };
+
+    mutate(newValues, {
+      onSuccess: (res) => {
+        console.log('success ', res), setFormOpen(false);
+      },
+    });
+    // postEvent(newValues).then((res) => {
+    //   console.log(res);
+    //   res && setFormOpen(false);
+    // });
   };
 
   const handleModalOk = () => {
     // setConfirmLoading(true);
+
     setTimeout(() => {
       setFormOpen(false);
       // setConfirmLoading(false);
@@ -67,21 +120,12 @@ const FormComponent = ({
       title="Create Event"
       open={isFormOpen}
       centered={true}
-      onOk={handleModalOk}
+      onOk={onFinish}
       // confirmLoading={confirmLoading}
       onCancel={handleCancel}
       okText="Save"
       destroyOnClose={true}
-      footer={[
-        <>
-          <Button form="form" htmlType="button" type="text">
-            Cancel
-          </Button>
-          <Button htmlType="submit" key="submit" type="primary">
-            Save
-          </Button>
-        </>,
-      ]}
+      footer={false}
     >
       <Form
         labelCol={{ span: 4 }}
@@ -89,24 +133,18 @@ const FormComponent = ({
         layout="horizontal"
         style={{ maxWidth: 600 }}
         onFinish={onFinish}
-        id="form"
       >
-        {schema.map((item: SchemaType) => (
-          <Form.Item
-            name={item.name}
-            label={item.label}
-            required={!!item.required}
-          >
-            <CustomInput item={item} />
-          </Form.Item>
+        {data.map((item: SchemaType, i: number) => (
+          <CustomField item={item} key={i} />
         ))}
-
-        {/* <Button htmlType="button" type="text">
-        Cancel
-      </Button>
-      <Button htmlType="submit" type="primary">
-        Save
-      </Button> */}
+        <div className="align-end">
+          <Button htmlType="button" type="text">
+            Cancel
+          </Button>
+          <Button htmlType="submit" type="primary">
+            Save
+          </Button>
+        </div>
       </Form>
     </Modal>
   );
