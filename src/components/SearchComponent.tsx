@@ -1,7 +1,15 @@
 // import { UserOutlined } from '@ant-design/icons';
-import { AutoComplete, Input } from 'antd';
+import { AutoComplete, Input, TableProps } from 'antd';
+import { SorterResult } from 'antd/es/table/interface';
 import { useState } from 'react';
 import { DataType } from '../utils/types';
+
+enum typeOfEvent {
+  holiday = 'holiday',
+  competitor = 'holiday',
+  generic = 'generic',
+  content = 'content',
+}
 
 const Search = ({ data }: { data: DataType[] }) => {
   const [options, setOptions] = useState<{ value: string; label: string }[]>(
