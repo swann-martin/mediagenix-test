@@ -1,78 +1,114 @@
-import React from 'react';
-import {
-  Button,
-  Cascader,
-  DatePicker,
-  Form,
-  Input,
-  InputNumber,
-  Radio,
-  Select,
-  Switch,
-  TreeSelect,
-} from 'antd';
+import React, { MouseEvent, useEffect } from 'react';
+import { Button, DatePicker, Form, Input, Select } from 'antd';
+import TextArea from 'antd/es/input/TextArea';
+import { SchemaType } from '../utils/types';
+import Modal from 'antd/es/modal/Modal';
 
-const FormComponent = () => {
-  type SizeType = Parameters<typeof Form>[0]['size'];
+const FormComponent = ({
+  isFormOpen,
+  setFormOpen,
+}: {
+  isFormOpen: boolean;
+  setFormOpen: React.Dispatch<React.SetStateAction<boolean>>;
+}) => {
+  const [form] = Form.useForm();
+  const { RangePicker } = DatePicker;
+
+  const [schema, setSchema] = React.useState([]);
+
+  useEffect(() => {
+    try {
+      const res = fetch(`http://localhost:5101/schema`);
+      res.then((res) => res.json()).then((schema) => setSchema(schema));
+    } catch (e) {
+      console.error(e);
+    }
+  }, []);
+
+  const CustomInput = ({ item }: { item: SchemaType }) => {
+    switch (item.component) {
+      case 'textarea':
+        return <TextArea />;
+      case 'range_picker':
+        return <RangePicker />;
+      case 'select':
+        return <Select options={item.options} />;
+      case 'text':
+        return <Input />;
+      default:
+        return <Input />;
+    }
+  };
+
+  const onFinish = (values: any) => {
+    console.log('Received values of form:', values);
+  };
+
+  const submit = (e: MouseEvent): void => {
+    e.preventDefault();
+    e.stopPropagation();
+    console.log('sumbitted form');
+  };
+
+  const handleModalOk = () => {
+    // setConfirmLoading(true);
+    setTimeout(() => {
+      setFormOpen(false);
+      // setConfirmLoading(false);
+    }, 2000);
+  };
+  const handleCancel = () => {
+    console.log('Clicked cancel button');
+    setFormOpen(false);
+  };
+
   return (
-    <Form
-      labelCol={{ span: 4 }}
-      wrapperCol={{ span: 14 }}
-      layout="horizontal"
-      initialValues={{ size: 10 }}
-      // size={componentSize as SizeType}
-      style={{ maxWidth: 600 }}
+    <Modal
+      title="Create Event"
+      open={isFormOpen}
+      centered={true}
+      onOk={handleModalOk}
+      // confirmLoading={confirmLoading}
+      onCancel={handleCancel}
+      okText="Save"
+      destroyOnClose={true}
+      footer={[
+        <>
+          <Button form="form" htmlType="button" type="text">
+            Cancel
+          </Button>
+          <Button htmlType="submit" key="submit" type="primary">
+            Save
+          </Button>
+        </>,
+      ]}
     >
-      <Form.Item label="Form Size" name="size">
-        <Radio.Group>
-          <Radio.Button value="small">Small</Radio.Button>
-          <Radio.Button value="default">Default</Radio.Button>
-          <Radio.Button value="large">Large</Radio.Button>
-        </Radio.Group>
-      </Form.Item>
-      <Form.Item label="Input">
-        <Input />
-      </Form.Item>
-      <Form.Item label="Select">
-        <Select>
-          <Select.Option value="demo">Demo</Select.Option>
-        </Select>
-      </Form.Item>
-      <Form.Item label="TreeSelect">
-        <TreeSelect
-          treeData={[
-            {
-              title: 'Light',
-              value: 'light',
-              children: [{ title: 'Bamboo', value: 'bamboo' }],
-            },
-          ]}
-        />
-      </Form.Item>
-      <Form.Item label="Cascader">
-        <Cascader
-          options={[
-            {
-              value: 'zhejiang',
-              label: 'Zhejiang',
-              children: [{ value: 'hangzhou', label: 'Hangzhou' }],
-            },
-          ]}
-        />
-      </Form.Item>
-      <Form.Item label="DatePicker">
-        <DatePicker />
-      </Form.Item>
-      <Form.Item label="InputNumber">
-        <InputNumber />
-      </Form.Item>
-      <Form.Item label="Switch" valuePropName="checked">
-        <Switch />
-      </Form.Item>
-      <Form.Item label="Button">
-        <Button>Button</Button>
-      </Form.Item>
-    </Form>
+      <Form
+        labelCol={{ span: 4 }}
+        wrapperCol={{ span: 14 }}
+        layout="horizontal"
+        style={{ maxWidth: 600 }}
+        onFinish={onFinish}
+        id="form"
+      >
+        {schema.map((item: SchemaType) => (
+          <Form.Item
+            name={item.name}
+            label={item.label}
+            required={!!item.required}
+          >
+            <CustomInput item={item} />
+          </Form.Item>
+        ))}
+
+        {/* <Button htmlType="button" type="text">
+        Cancel
+      </Button>
+      <Button htmlType="submit" type="primary">
+        Save
+      </Button> */}
+      </Form>
+    </Modal>
   );
 };
 

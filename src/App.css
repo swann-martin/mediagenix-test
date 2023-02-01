@@ -6,8 +6,9 @@
   min-height: 1vh;
 }
 
-.App-header {
+.app-header {
   display: flex;
   justify-content: space-between;
   align-items: center;
+  margin: 2rem 0;
 }

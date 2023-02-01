@@ -27,7 +27,7 @@ const Search = ({ data }: { data: DataType[] }) => {
       options={options}
       onSearch={handleSearch}
     >
-      <Input.Search size="large" placeholder="Search" />
+      <Input.Search size="middle" placeholder="Search events" enterButton />
     </AutoComplete>
   );
 };

@@ -1,5 +1,4 @@
 import { useState, useEffect } from 'react';
-import reactLogo from './assets/react.svg';
 import './App.css';
 import FormComponent from './components/Form';
 import { DataType } from './utils/types';
@@ -14,15 +13,51 @@ import {
   QueryClientProvider,
 } from '@tanstack/react-query';
 import Search from './components/Search';
+import Modal from 'antd/es/modal/Modal';
+
+enum typeOfEvent {
+  holiday = 'holiday',
+  competitor = 'holiday',
+  generic = 'generic',
+  content = 'content',
+}
 
 function App() {
-  const [formIsOpen, setFormIsOpen] = useState<boolean>(false);
+  const [isFormOpen, setFormOpen] = useState<boolean>(false);
   const [data, setData] = useState<DataType[] | []>([]);
   const [sortedInfo, setSortedInfo] = useState<SorterResult<DataType>>({});
 
   const handleChange: TableProps<DataType>['onChange'] = (filters, sorter) => {
     console.log('Various parameters', filters, sorter);
     setSortedInfo(sorter as SorterResult<DataType>);
+  };
+
+  const getColor = (type: string) => {
+    switch (type) {
+      case 'holiday':
+        return '#d9eae2';
+      case 'competitor':
+        return '#ecd9eb';
+      case 'content':
+        return '#fdeddc';
+      case 'generic':
+      default:
+        return '#ede5de';
+    }
+  };
+
+  const getTypeName = (type: string) => {
+    switch (type) {
+      case 'holiday':
+        return 'Public Holidays';
+      case 'competitor':
+        return 'Competitor Event';
+      case 'content':
+        return 'Content Launch';
+      case 'generic':
+      default:
+        return 'Generic Event';
+    }
   };
 
   const columns: ColumnsType<DataType> = [
@@ -40,10 +75,10 @@ function App() {
       dataIndex: 'type',
       key: 'key',
       render: (_, { type, id }) => {
-        let color = type === 'generic' ? '#a0a0a0' : '#e2001a';
+        let color = getColor(type);
         return (
           <Tag color={color} key={`${type}${id}`}>
-            {type.toUpperCase()}
+            {getTypeName(type)}
           </Tag>
         );
       },
@@ -75,7 +110,7 @@ function App() {
   ];
 
   const getData = async () =>
-    fetch('http://localhost:5100/data', {
+    fetch('http://localhost:5101/data', {
       method: 'GET',
       headers: {
         Accept: 'application/json',
@@ -86,26 +121,30 @@ function App() {
   useEffect(() => {
     getData().then((data) => {
       setData(data);
-      console.log(data);
     });
   }, []);
 
   return (
-    <div className="App">
-      <div className="App-header">
+    <div className="app">
+      <div className="app-header">
         <Search data={data} />
         <Button
           type="default"
+          style={{
+            backgroundColor: '#4d4d4d',
+            color: '#fff',
+          }}
           onClick={() => {
             console.log('clicked on button');
-            setFormIsOpen(!formIsOpen);
+            setFormOpen(!isFormOpen);
           }}
         >
           Create
         </Button>
       </div>
       <Table columns={columns} dataSource={data} onChange={handleChange} />
-      {formIsOpen && <FormComponent />}
+
+      <FormComponent isFormOpen={isFormOpen} setFormOpen={setFormOpen} />
     </div>
   );
 }

@@ -4,6 +4,7 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
+    "serve": "json-server --port 5101 ./fake-api.json",
     "dev": "vite",
     "build": "tsc && vite build",
     "preview": "vite preview"
@@ -11,6 +12,7 @@
   "dependencies": {
     "@tanstack/react-query": "^4.24.4",
     "antd": "^5.1.7",
+    "json-server": "^0.17.1",
     "react": "^18.2.0",
     "react-dom": "^18.2.0"
   },
