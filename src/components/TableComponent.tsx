@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { DataType } from '../utils/types';
 import { Table, Tag, TableProps, Spin, Popconfirm } from 'antd';
 import type {
@@ -9,6 +9,7 @@ import type {
 } from 'antd/es/table/interface';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { deleteEvent, fetchEvents } from '../api/queriesFonctions';
+import axios from 'axios';
 
 interface TableParams {
   pagination?: TablePaginationConfig;
@@ -17,30 +18,43 @@ interface TableParams {
   filters?: Record<string, FilterValue>;
 }
 
-const TableComponent = () => {
-  const [sortedInfo, setSortedInfo] = useState<SorterResult<DataType[]>>({});
-  const queryClient = useQueryClient();
+const TableComponent = ({
+  events,
+  setEvents,
+}: {
+  events: DataType[] | [];
+  setEvents: React.Dispatch<React.SetStateAction<DataType[]>>;
+}) => {
+  const [sortedInfo, setSortedInfo] = useState<DataType[] | []>([]);
+  // const queryClient = useQueryClient();
   // query
-  const { isLoading, error, data } = useQuery({
-    queryKey: ['events'],
-    queryFn: fetchEvents,
-  });
+  // const { isLoading, error, data } = useQuery({
+  //   queryKey: ['events'],
+  //   queryFn: fetchEvents,
+  // });
 
-  const deletePost = useMutation(deleteEvent).mutate;
+  // const deletePost = useMutation(deleteEvent).mutate;
 
-  if (isLoading)
-    return (
-      <Spin tip="Loading">
-        <div className="spin-content" />
-      </Spin>
-    );
+  // if (isLoading)
+  //   return (
+  //     <Spin tip="Loading">
+  //       <div className="spin-content" />
+  //     </Spin>
+  //   );
 
-  if (error)
-    return (
-      <div>
-        <p>{JSON.stringify(error)}</p>
-      </div>
-    );
+  // if (error)
+  //   return (
+  //     <div>
+  //       <p>{JSON.stringify(error)}</p>
+  //     </div>
+  //   );
+
+  useEffect(() => {
+    try {
+      !!events && setSortedInfo(events);
+    } catch (error) {}
+    return () => {};
+  }, []);
 
   const handleChange: TableProps<DataType>['onChange'] = (filters, sorter) => {
     console.log('Various parameters', filters, sorter);
@@ -74,11 +88,14 @@ const TableComponent = () => {
   };
 
   const handleDelete = (id: string) => {
-    deletePost(id, {
-      onSuccess(data, variables, context) {
-        queryClient.invalidateQueries(['events']);
-      },
-    });
+    try {
+      deleteEvent(id).then((res) => {
+        const newEvents = events.filter((event) => event.id !== id);
+        setEvents(newEvents);
+      });
+    } catch (error) {
+      alert(error);
+    }
   };
 
   const columns: ColumnsType<DataType> = [
@@ -109,7 +126,6 @@ const TableComponent = () => {
       dataIndex: 'startDate',
       key: 'startDate',
       sorter: (a, b) => a.startDate.length - b.startDate.length,
-
       ellipsis: true,
     },
     {
@@ -117,7 +133,7 @@ const TableComponent = () => {
       dataIndex: 'endDate',
       key: 'endDate',
       sorter: (a, b) => a.endDate.length - b.endDate.length,
-      sortOrder: sortedInfo.columnKey === '' ? sortedInfo.order : null,
+      // sortOrder: sortedInfo.columnKey === '' ? sortedInfo.order : null,
       ellipsis: true,
     },
     {
@@ -129,7 +145,7 @@ const TableComponent = () => {
       title: 'ACTION',
       dataIndex: 'action',
       render: (_, record) =>
-        !!data && data.length >= 1 ? (
+        !!events && events.length >= 1 ? (
           <Popconfirm
             title="Sure to delete?"
             onConfirm={() => handleDelete(record.id)}
@@ -143,7 +159,7 @@ const TableComponent = () => {
   return (
     <Table
       columns={columns}
-      dataSource={data}
+      dataSource={events}
       onChange={handleChange}
       rowKey={(event) => event.id}
     />

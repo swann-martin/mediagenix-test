@@ -13,13 +13,13 @@ enum typeOfEvent {
   content = 'content',
 }
 
-const Search = () => {
+const Search = ({ data }: { data: DataType[] | [] }) => {
   const [filter, setFilter] = useState('');
 
-  const { status, data, isFetching, error, failureCount, refetch } = useQuery({
-    queryKey: ['events'],
-    queryFn: fetchEvents,
-  });
+  // const { status, data, isFetching, error, failureCount, refetch } = useQuery({
+  //   queryKey: ['events'],
+  //   queryFn: fetchEvents,
+  // });
   const [options, setOptions] = useState<{ value: string; label: string }[]>(
     [],
   );
