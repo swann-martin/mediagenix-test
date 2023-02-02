@@ -5,19 +5,12 @@ import { DataType } from './utils/types';
 import { Button, Spin } from 'antd';
 import { ReactQueryDevtools } from '@tanstack/react-query-devtools';
 
-import {
-  useQuery,
-  useMutation,
-  useQueryClient,
-  QueryClient,
-  QueryClientProvider,
-} from '@tanstack/react-query';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import Search from './components/SearchComponent';
 import TableComponent from './components/TableComponent';
 
 function App() {
   const [isFormOpen, setFormOpen] = useState<boolean>(false);
-  const [data, setData] = useState<DataType[] | []>([]);
 
   const queryClient = new QueryClient();
 
@@ -25,7 +18,7 @@ function App() {
     <QueryClientProvider client={queryClient}>
       <div className="app">
         <div className="app-header">
-          <Search data={data} />
+          <Search />
           <Button
             type="default"
             style={{

@@ -1,10 +1,14 @@
-import React, { MouseEvent, useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { Button, DatePicker, Form, Input, Select, Space, Spin } from 'antd';
 import TextArea from 'antd/es/input/TextArea';
 import { SchemaType } from '../utils/types';
 import Modal from 'antd/es/modal/Modal';
-import { useMutation, useQuery } from '@tanstack/react-query';
-import { fetchFormSchema, postEvent } from '../api/queriesFonctions';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import {
+  deleteEvent,
+  fetchFormSchema,
+  postEvent,
+} from '../api/queriesFonctions';
 
 const FormComponent = ({
   isFormOpen,
@@ -15,11 +19,13 @@ const FormComponent = ({
 }) => {
   const [form] = Form.useForm();
   const { RangePicker } = DatePicker;
-  const { mutate } = useMutation(postEvent, {});
+  const createEvent = useMutation(postEvent).mutate;
+
   const { isLoading, error, data } = useQuery({
     queryKey: ['schema'],
     queryFn: fetchFormSchema,
   });
+  const queryClient = useQueryClient();
 
   if (isLoading)
     return (
@@ -42,7 +48,12 @@ const FormComponent = ({
           <Form.Item
             name={item.name}
             label={item.label}
-            required={!!item.required}
+            rules={[
+              {
+                required: !!item.required,
+                message: `${item.label} is required`,
+              },
+            ]}
           >
             <TextArea />
           </Form.Item>
@@ -52,7 +63,12 @@ const FormComponent = ({
           <Form.Item
             name={item.name}
             label={item.label}
-            required={!!item.required}
+            rules={[
+              {
+                required: true,
+                message: `${item.label} is required`,
+              },
+            ]}
           >
             <RangePicker />
           </Form.Item>
@@ -63,7 +79,12 @@ const FormComponent = ({
           <Form.Item
             name={item.name}
             label={item.label}
-            required={!!item.required}
+            rules={[
+              {
+                required: !!item.required,
+                message: `${item.label} is required`,
+              },
+            ]}
           >
             <Select options={item.options} />
           </Form.Item>
@@ -75,7 +96,12 @@ const FormComponent = ({
           <Form.Item
             name={item.name}
             label={item.label}
-            required={!!item.required}
+            rules={[
+              {
+                required: !!item.required,
+                message: `${item.label} is required`,
+              },
+            ]}
           >
             <Input />
           </Form.Item>
@@ -83,70 +109,66 @@ const FormComponent = ({
     }
   };
 
-  const onFinish = (values: any) => {
+  const onFinish = () => {
+    const values = form.getFieldsValue();
+    // reformat date to get the  correct string format YYYY-MM-DD
+    console.log(values);
     values.endDate = values.startDate.endDate[1].toISOString().split('T')[0];
     values.startDate = values.startDate.endDate[0].toISOString().split('T')[0];
 
-    const newValues = {
+    const newEvent = {
       ...values,
     };
 
-    mutate(newValues, {
-      onSuccess: (res) => {
-        console.log('success ', res), setFormOpen(false);
+    createEvent(newEvent, {
+      onSuccess: () => {
+        form.resetFields();
+        queryClient
+          .invalidateQueries({ queryKey: ['events'] })
+          .then(() => setFormOpen(false));
+      },
+      onError(error) {
+        alert(`Error form  : ${error}`);
       },
     });
-    // postEvent(newValues).then((res) => {
-    //   console.log(res);
-    //   res && setFormOpen(false);
-    // });
   };
 
-  const handleModalOk = () => {
-    // setConfirmLoading(true);
-
-    setTimeout(() => {
-      setFormOpen(false);
-      // setConfirmLoading(false);
-    }, 2000);
-  };
   const handleCancel = () => {
     console.log('Clicked cancel button');
     setFormOpen(false);
   };
 
   return (
-    <Modal
-      title="Create Event"
-      open={isFormOpen}
-      centered={true}
-      onOk={onFinish}
-      // confirmLoading={confirmLoading}
-      onCancel={handleCancel}
-      okText="Save"
-      destroyOnClose={true}
-      footer={false}
+    // <Modal
+    //   title="Create Event"
+    //   open={isFormOpen}
+    //   centered={true}
+    //   onOk={onFinish}
+    //   focusTriggerAfterClose
+    //   onCancel={handleCancel}
+    //   footer={false}
+    // >
+    <Form
+      labelCol={{ span: 4 }}
+      wrapperCol={{ span: 14 }}
+      layout="horizontal"
+      style={{ maxWidth: 600 }}
+      onFinish={onFinish}
+      form={form}
     >
-      <Form
-        labelCol={{ span: 4 }}
-        wrapperCol={{ span: 14 }}
-        layout="horizontal"
-        style={{ maxWidth: 600 }}
-        onFinish={onFinish}
-      >
-        {data.map((item: SchemaType, i: number) => (
-          <CustomField item={item} key={i} />
-        ))}
-        <div className="align-end">
-          <Button htmlType="button" type="text">
-            Cancel
-          </Button>
-          <Button htmlType="submit" type="primary">
-            Save
-          </Button>
-        </div>
-      </Form>
-    </Modal>
+      {data.map((item: SchemaType, i: number) => (
+        <CustomField item={item} key={i} />
+      ))}
+      <div className="align-end">
+        <Button htmlType="button" type="text">
+          Cancel
+        </Button>
+        <Button htmlType="submit" type="primary">
+          Save
+        </Button>
+      </div>
+    </Form>
+    // </Modal>
   );
 };
 

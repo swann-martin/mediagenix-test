@@ -1,17 +1,32 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import { DataType } from '../utils/types';
-import { Button, Table, Tag, TableProps, Spin } from 'antd';
-import type { ColumnsType, SorterResult } from 'antd/es/table/interface';
-import { useQuery } from '@tanstack/react-query';
-import axios from 'axios';
+import { Table, Tag, TableProps, Spin, Popconfirm } from 'antd';
+import type {
+  ColumnsType,
+  FilterValue,
+  SorterResult,
+  TablePaginationConfig,
+} from 'antd/es/table/interface';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { deleteEvent, fetchEvents } from '../api/queriesFonctions';
+
+interface TableParams {
+  pagination?: TablePaginationConfig;
+  sortField?: string;
+  sortOrder?: string;
+  filters?: Record<string, FilterValue>;
+}
 
 const TableComponent = () => {
-  const [sortedInfo, setSortedInfo] = useState<SorterResult<DataType>>({});
-  const { isLoading, error, data, isFetching } = useQuery({
-    queryKey: ['fetchEvents'],
-    queryFn: () =>
-      axios.get('http://localhost:5101/events').then((res) => res.data),
+  const [sortedInfo, setSortedInfo] = useState<SorterResult<DataType[]>>({});
+  const queryClient = useQueryClient();
+  // query
+  const { isLoading, error, data } = useQuery({
+    queryKey: ['events'],
+    queryFn: fetchEvents,
   });
+
+  const deletePost = useMutation(deleteEvent).mutate;
 
   if (isLoading)
     return (
@@ -29,7 +44,6 @@ const TableComponent = () => {
 
   const handleChange: TableProps<DataType>['onChange'] = (filters, sorter) => {
     console.log('Various parameters', filters, sorter);
-    setSortedInfo(sorter as SorterResult<DataType>);
   };
   const getColor = (type: string) => {
     switch (type) {
@@ -59,20 +73,27 @@ const TableComponent = () => {
     }
   };
 
+  const handleDelete = (id: string) => {
+    deletePost(id, {
+      onSuccess(data, variables, context) {
+        queryClient.invalidateQueries(['events']);
+      },
+    });
+  };
+
   const columns: ColumnsType<DataType> = [
     {
       title: 'TITLE',
       dataIndex: 'title',
-      key: 'key',
+      key: 'title',
       render: (text: string) => <a>{text}</a>,
-      sorter: (a, b) => a.title.length - b.title.length,
-      sortOrder: sortedInfo.columnKey === 'type' ? sortedInfo.order : null,
+      sorter: true,
       ellipsis: true,
     },
     {
       title: 'TYPE',
       dataIndex: 'type',
-      key: 'key',
+      key: 'type',
       render: (_, { type, id }) => {
         let color = getColor(type);
         return (
@@ -82,21 +103,19 @@ const TableComponent = () => {
         );
       },
       sorter: (a, b) => a.type.length - b.type.length,
-      sortOrder: sortedInfo.columnKey === 'type' ? sortedInfo.order : null,
-      ellipsis: true,
     },
     {
       title: 'START DATE',
       dataIndex: 'startDate',
-      key: 'key',
+      key: 'startDate',
       sorter: (a, b) => a.startDate.length - b.startDate.length,
-      sortOrder: sortedInfo.columnKey === '' ? sortedInfo.order : null,
+
       ellipsis: true,
     },
     {
       title: 'END DATE',
       dataIndex: 'endDate',
-      key: 'key',
+      key: 'endDate',
       sorter: (a, b) => a.endDate.length - b.endDate.length,
       sortOrder: sortedInfo.columnKey === '' ? sortedInfo.order : null,
       ellipsis: true,
@@ -104,10 +123,30 @@ const TableComponent = () => {
     {
       title: 'DESCRIPTION',
       dataIndex: 'description',
-      key: 'key',
+      key: 'description',
+    },
+    {
+      title: 'ACTION',
+      dataIndex: 'action',
+      render: (_, record) =>
+        !!data && data.length >= 1 ? (
+          <Popconfirm
+            title="Sure to delete?"
+            onConfirm={() => handleDelete(record.id)}
+          >
+            <a>Delete</a>
+          </Popconfirm>
+        ) : null,
     },
   ];
 
-  return <Table columns={columns} dataSource={data} onChange={handleChange} />;
+  return (
+    <Table
+      columns={columns}
+      dataSource={data}
+      onChange={handleChange}
+      rowKey={(event) => event.id}
+    />
+  );
 };
 export default TableComponent;

@@ -1,7 +1,9 @@
 // import { UserOutlined } from '@ant-design/icons';
+import { useQuery } from '@tanstack/react-query';
 import { AutoComplete, Input, TableProps } from 'antd';
 import { SorterResult } from 'antd/es/table/interface';
 import { useState } from 'react';
+import { fetchEvents, fetchEventsFilter } from '../api/queriesFonctions';
 import { DataType } from '../utils/types';
 
 enum typeOfEvent {
@@ -11,20 +13,30 @@ enum typeOfEvent {
   content = 'content',
 }
 
-const Search = ({ data }: { data: DataType[] }) => {
+const Search = () => {
+  const [filter, setFilter] = useState('');
+
+  const { status, data, isFetching, error, failureCount, refetch } = useQuery({
+    queryKey: ['events'],
+    queryFn: fetchEvents,
+  });
   const [options, setOptions] = useState<{ value: string; label: string }[]>(
     [],
   );
 
   const handleSearch = (value: string) => {
+    console.log('value searched', value);
     let res: { value: string; label: string }[] = [];
 
-    data.forEach((item) => {
+    data?.forEach((item: DataType) => {
       if (item.title.toLowerCase().includes(value.toLowerCase())) {
         res = [...res, { label: item.title, value: item.title }];
+      } else if (item.description.toLowerCase().includes(value.toLowerCase())) {
+        res = [...res, { label: item.description, value: item.description }];
       }
     });
-    setOptions(res);
+
+    setOptions([...new Set(res)]);
   };
 
   return (
@@ -34,6 +46,10 @@ const Search = ({ data }: { data: DataType[] }) => {
       style={{ width: 250 }}
       options={options}
       onSearch={handleSearch}
+      onSelect={(value: string) => {
+        setFilter(value),
+          fetchEventsFilter(filter).then((res) => console.log(res));
+      }}
     >
       <Input.Search size="middle" placeholder="Search events" enterButton />
     </AutoComplete>
